@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SGO Software Pricing Calculator</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --card: #ffffff;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --accent: #1d4ed8;
+    --accent-soft: #eff6ff;
+    --good: #047857;
+    --good-soft: #ecfdf5;
+    --warn: #b45309;
+    --warn-soft: #fffbeb;
+    --bad: #b91c1c;
+    --bad-soft: #fef2f2;
+    --shadow: 0 1px 2px rgba(15,23,42,.04), 0 4px 12px rgba(15,23,42,.06);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 32px 24px 64px; }
+  header h1 {
+    font-size: 30px; margin: 0 0 6px; letter-spacing: -0.02em;
+  }
+  header p { margin: 0; color: var(--muted); font-size: 15px; max-width: 720px; }
+  section { margin-top: 32px; }
+  h2 {
+    font-size: 20px; margin: 0 0 16px; letter-spacing: -0.01em;
+  }
+  h3 { font-size: 15px; margin: 0 0 8px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 20px;
+  }
+
+  /* Inputs */
+  .inputs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px;
+  }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+  .field input[type="number"] {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--ink);
+    background: #fff;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .field input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(29,78,216,.12);
+  }
+
+  .preset-row {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 14px;
+  }
+  .preset-btn {
+    padding: 7px 13px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--ink);
+    font-family: inherit;
+    transition: all .15s;
+  }
+  .preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .preset-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  details.advanced { margin-top: 16px; }
+  details.advanced summary {
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--muted);
+    user-select: none;
+    padding: 6px 0;
+  }
+  details.advanced summary:hover { color: var(--accent); }
+  .advanced-grid {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+  }
+
+  /* Summary stats bar */
+  .summary-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+  }
+  .summary-bar .stat {
+    background: var(--accent-soft);
+    border: 1px solid #dbeafe;
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .summary-bar .stat .label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: #1e40af; margin-bottom: 4px;
+  }
+  .summary-bar .stat .value {
+    font-size: 20px; font-weight: 600; color: #0f172a;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Results table */
+  .results-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .results-table thead th {
+    text-align: left; padding: 10px 12px;
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--muted); font-weight: 600;
+    border-bottom: 1px solid var(--line);
+    background: #f8fafc;
+  }
+  .results-table tbody td {
+    padding: 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  .results-table tbody tr:last-child td { border-bottom: none; }
+  .results-table tbody tr:hover { background: #f8fafc; }
+  .model-name { font-weight: 600; color: var(--ink); }
+  .model-sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .num { text-align: right; }
+  .pill {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .pill.donor { background: var(--warn-soft); color: var(--warn); }
+  .pill.sgo { background: var(--good-soft); color: var(--good); }
+
+  /* Bars */
+  .bar-cell { min-width: 220px; }
+  .bar-track {
+    background: #f1f5f9; border-radius: 4px; height: 8px; overflow: hidden;
+    margin-top: 4px;
+  }
+  .bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width .25s ease; }
+  .bar-fill.high { background: var(--bad); }
+  .bar-fill.med { background: var(--warn); }
+  .bar-fill.low { background: var(--good); }
+
+  /* Scenarios table */
+  .scenarios-wrap { overflow-x: auto; }
+  .scenarios-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px; font-variant-numeric: tabular-nums;
+    min-width: 760px;
+  }
+  .scenarios-table th, .scenarios-table td {
+    padding: 10px 12px; text-align: right;
+    border-bottom: 1px solid var(--line);
+  }
+  .scenarios-table th:first-child, .scenarios-table td:first-child {
+    text-align: left;
+  }
+  .scenarios-table thead th {
+    background: #f8fafc; color: var(--muted);
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .scenarios-table tbody tr:hover { background: #f8fafc; }
+  .scenarios-table .group-header td {
+    background: #f1f5f9; font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);
+    text-align: left;
+  }
+
+  /* Pros/cons cards */
+  .models-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 14px;
+  }
+  .model-card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 18px;
+    box-shadow: var(--shadow);
+  }
+  .model-card h3 {
+    margin: 0 0 4px; font-size: 15px;
+  }
+  .model-card .tagline {
+    font-size: 13px; color: var(--muted); margin-bottom: 14px;
+  }
+  .pros-cons { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .pc-block { font-size: 13px; }
+  .pc-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+    font-weight: 700; margin-bottom: 4px;
+  }
+  .pc-pros .pc-label { color: var(--good); }
+  .pc-cons .pc-label { color: var(--bad); }
+  .pc-block ul { margin: 0; padding-left: 18px; }
+  .pc-block li { margin-bottom: 3px; line-height: 1.4; }
+
+  /* Recommendations */
+  .rec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+  .rec-card {
+    border-radius: 12px; padding: 18px;
+    border: 1px solid var(--line); background: var(--card);
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  .rec-card .badge {
+    position: absolute; top: -10px; left: 18px;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+    color: #fff;
+  }
+  .rec-card.gold .badge { background: #b45309; }
+  .rec-card.silver .badge { background: #475569; }
+  .rec-card.bronze .badge { background: #92400e; }
+  .rec-card h3 { margin: 6px 0 4px; font-size: 16px; }
+  .rec-card .why { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  .rec-card .stat-row {
+    display: flex; justify-content: space-between;
+    padding: 6px 0; font-size: 13px;
+    border-top: 1px solid var(--line);
+  }
+  .rec-card .stat-row span:last-child { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* Decision matrix */
+  .decision-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .decision-table th, .decision-table td {
+    text-align: left; padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .decision-table thead th {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); font-weight: 600; background: #f8fafc;
+  }
+  .decision-table tbody td:first-child { font-weight: 600; }
+
+  footer { margin-top: 48px; color: var(--muted); font-size: 12px; text-align: center; }
+
+  @media (max-width: 720px) {
+    .wrap { padding: 24px 16px 48px; }
+    header h1 { font-size: 24px; }
+    .summary-bar .stat .value { font-size: 17px; }
+    .results-table thead { display: none; }
+    .results-table tbody tr {
+      display: block; margin-bottom: 12px;
+      border: 1px solid var(--line); border-radius: 8px;
+    }
+    .results-table tbody td {
+      display: flex; justify-content: space-between;
+      padding: 8px 12px; border-bottom: 1px solid var(--line);
+    }
+    .results-table tbody td:before {
+      content: attr(data-label);
+      font-size: 12px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>SGO Software Pricing Calculator</h1>
+  <p>Interactive comparison of seven pricing structures for an SGO platform. Adjust the inputs to see how revenue and donor/SGO economics shift across volume, school count, and rate assumptions.</p>
+</header>
+
+<!-- INPUTS -->
+<section>
+  <div class="card">
+    <h2>Inputs</h2>
+    <div class="inputs-grid">
+      <div class="field">
+        <label for="donors">Donors</label>
+        <input type="number" id="donors" value="10000" min="0" step="500" />
+      </div>
+      <div class="field">
+        <label for="applicants">Applicants</label>
+        <input type="number" id="applicants" value="10000" min="0" step="500" />
+      </div>
+      <div class="field">
+        <label for="schools">Schools</label>
+        <input type="number" id="schools" value="20" min="0" step="1" />
+      </div>
+      <div class="field">
+        <label for="admins">Admins</label>
+        <input type="number" id="admins" value="5" min="0" step="1" />
+      </div>
+      <div class="field">
+        <label for="donation">Avg Donation ($)</label>
+        <input type="number" id="donation" value="1700" min="0" step="50" />
+      </div>
+    </div>
+
+    <div class="preset-row" id="presetRow">
+      <button class="preset-btn" data-d="5000">5K donors</button>
+      <button class="preset-btn active" data-d="10000">10K donors</button>
+      <button class="preset-btn" data-d="15000">15K donors</button>
+      <button class="preset-btn" data-d="20000">20K donors</button>
+      <button class="preset-btn" data-d="25000">25K donors</button>
+      <button class="preset-btn" data-d="30000">30K donors</button>
+    </div>
+
+    <details class="advanced">
+      <summary>Advanced — adjust pricing rates</summary>
+      <div class="advanced-grid">
+        <div class="field">
+          <label for="m1Rate">Model 1: Donor fee %</label>
+          <input type="number" id="m1Rate" value="1.0" min="0" step="0.1" />
+        </div>
+        <div class="field">
+          <label for="m2Flat">Model 2: Flat annual ($)</label>
+          <input type="number" id="m2Flat" value="144000" min="0" step="1000" />
+        </div>
+        <div class="field">
+          <label for="m4Rate">Model 4: % of donations</label>
+          <input type="number" id="m4Rate" value="2.0" min="0" step="0.25" />
+        </div>
+        <div class="field">
+          <label for="m5Base">Model 5: Hybrid base ($)</label>
+          <input type="number" id="m5Base" value="36000" min="0" step="1000" />
+        </div>
+        <div class="field">
+          <label for="m5Rate">Model 5: Hybrid %</label>
+          <input type="number" id="m5Rate" value="0.75" min="0" step="0.05" />
+        </div>
+        <div class="field">
+          <label for="m6aRate">Model 6a: $ per school</label>
+          <input type="number" id="m6aRate" value="6000" min="0" step="500" />
+        </div>
+      </div>
+    </details>
+
+    <div class="summary-bar">
+      <div class="stat"><div class="label">Total Donations</div><div class="value" id="sumDonations">—</div></div>
+      <div class="stat"><div class="label">Total Users</div><div class="value" id="sumUsers">—</div></div>
+      <div class="stat"><div class="label">Max Overhead Allowance (10%)</div><div class="value" id="sumOverhead">—</div></div>
+      <div class="stat"><div class="label">Cheapest SGO Model</div><div class="value" id="sumCheap">—</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- LIVE RESULTS -->
+<section>
+  <h2>Annual Software Cost by Model</h2>
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Who Pays</th>
+          <th class="num">Annual Cost</th>
+          <th class="num">% of Donations</th>
+          <th class="num">% of Overhead Cap</th>
+          <th class="bar-cell">Relative</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SCENARIO TABLE -->
+<section>
+  <h2>Scenario Comparison — 5K to 30K donors</h2>
+  <div class="card scenarios-wrap">
+    <table class="scenarios-table">
+      <thead>
+        <tr>
+          <th>Metric / Model</th>
+          <th>5,000</th>
+          <th>10,000</th>
+          <th>15,000</th>
+          <th>20,000</th>
+          <th>25,000</th>
+          <th>30,000</th>
+        </tr>
+      </thead>
+      <tbody id="scenarioBody"></tbody>
+    </table>
+    <p style="font-size:12px; color: var(--muted); margin: 12px 0 0;">
+      Assumes applicants = donors (1:1), 20 schools, 5 admins, $1,700 avg donation. Rates use the defaults shown in inputs above.
+    </p>
+  </div>
+</section>
+
+<!-- PROS / CONS -->
+<section>
+  <h2>Pros &amp; Cons by Pricing Model</h2>
+  <div class="models-grid" id="prosConsGrid"></div>
+</section>
+
+<!-- DECISION MATRIX -->
+<section>
+  <h2>Decision Matrix — Pick a Model by Strategic Goal</h2>
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table class="decision-table">
+      <thead>
+        <tr><th>If the priority is…</th><th>Best fit</th><th>Why</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Beating "free-to-school" competitor on donor optics</td><td>Model 2, 6a, or 6b</td><td>SGO absorbs cost; donors keep 100% of the federal credit on every dollar.</td></tr>
+        <tr><td>Predictable annual budget</td><td>Model 2 (Flat)</td><td>One number, doesn't flex with volume — easy to underwrite.</td></tr>
+        <tr><td>Vendor revenue scales with platform success</td><td>Model 4 or 5</td><td>Both grow with donations; Model 5 caps base risk with the fixed component.</td></tr>
+        <tr><td>Defending against 90% rule pressure</td><td>Model 6a, 6b, or 2</td><td>Fixed costs become a smaller share of overhead as donations grow.</td></tr>
+        <tr><td>Lowest possible cost at large scale (25K+ donors)</td><td>Model 6b</td><td>Per-school tiered pricing stays flat while donations scale up.</td></tr>
+        <tr><td>Lowest barrier to entry for a brand-new SGO</td><td>Model 5 (Hybrid)</td><td>Modest base in year one, vendor upside only kicks in if the SGO succeeds.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  Calculator is illustrative. Adjust inputs and rates above to model any specific deal structure.
+</footer>
+
+</div>
+
+<script>
+// ====== Pricing logic ======
+
+// Tier table for Model 3 (min total users -> annual price)
+const M3_TIERS = [
+  { min: 0,     price: 36000  },
+  { min: 5000,  price: 72000  },
+  { min: 10000, price: 108000 },
+  { min: 20000, price: 150000 },
+  { min: 30000, price: 204000 },
+  { min: 50000, price: 264000 }
+];
+
+// Per-school tiered rates for Model 6b (proportional split: 40% small / 40% medium / 20% large)
+const M6B_SMALL  = 3000;
+const M6B_MEDIUM = 6000;
+const M6B_LARGE  = 10000;
+
+function model3Cost(totalUsers) {
+  let price = M3_TIERS[0].price;
+  for (const tier of M3_TIERS) {
+    if (totalUsers >= tier.min) price = tier.price;
+  }
+  return price;
+}
+
+function model6bCost(schools) {
+  const small  = Math.round(schools * 0.4);
+  const medium = Math.round(schools * 0.4);
+  const large  = Math.max(0, schools - small - medium);
+  return small * M6B_SMALL + medium * M6B_MEDIUM + large * M6B_LARGE;
+}
+
+function computeAll(inputs) {
+  const { donors, applicants, schools, admins, donation,
+          m1Rate, m2Flat, m4Rate, m5Base, m5Rate, m6aRate } = inputs;
+  const totalUsers = donors + applicants + schools + admins;
+  const totalDonations = donors * donation;
+  const overhead = totalDonations * 0.10;
+
+  const models = [
+    { id: 1,  name: 'Model 1 — Donor 1% Fee',          payer: 'donor', cost: totalDonations * (m1Rate / 100) },
+    { id: 2,  name: 'Model 2 — Flat Subscription',     payer: 'sgo',   cost: m2Flat },
+    { id: 3,  name: 'Model 3 — Tiered by Users',       payer: 'sgo',   cost: model3Cost(totalUsers) },
+    { id: 4,  name: `Model 4 — % of Donations`,        payer: 'sgo',   cost: totalDonations * (m4Rate / 100) },
+    { id: 5,  name: 'Model 5 — Hybrid Base + %',       payer: 'sgo',   cost: m5Base + totalDonations * (m5Rate / 100) },
+    { id: 6,  name: 'Model 6a — Per-School Flat',      payer: 'sgo',   cost: schools * m6aRate },
+    { id: 7,  name: 'Model 6b — Per-School Tiered',    payer: 'sgo',   cost: model6bCost(schools) }
+  ];
+
+  return { totalUsers, totalDonations, overhead, models };
+}
+
+// ====== UI ======
+
+const fmtMoney = n => '$' + Math.round(n).toLocaleString('en-US');
+const fmtPct   = n => (n * 100).toFixed(2) + '%';
+const fmtInt   = n => Math.round(n).toLocaleString('en-US');
+
+function readInputs() {
+  return {
+    donors:     +document.getElementById('donors').value     || 0,
+    applicants: +document.getElementById('applicants').value || 0,
+    schools:    +document.getElementById('schools').value    || 0,
+    admins:     +document.getElementById('admins').value     || 0,
+    donation:   +document.getElementById('donation').value   || 0,
+    m1Rate:     +document.getElementById('m1Rate').value     || 0,
+    m2Flat:     +document.getElementById('m2Flat').value     || 0,
+    m4Rate:     +document.getElementById('m4Rate').value     || 0,
+    m5Base:     +document.getElementById('m5Base').value     || 0,
+    m5Rate:     +document.getElementById('m5Rate').value     || 0,
+    m6aRate:    +document.getElementById('m6aRate').value    || 0
+  };
+}
+
+function renderResults() {
+  const inputs = readInputs();
+  const { totalUsers, totalDonations, overhead, models } = computeAll(inputs);
+
+  // Summary bar
+  document.getElementById('sumDonations').textContent = fmtMoney(totalDonations);
+  document.getElementById('sumUsers').textContent     = fmtInt(totalUsers);
+  document.getElementById('sumOverhead').textContent  = fmtMoney(overhead);
+  const sgoModels = models.filter(m => m.payer === 'sgo');
+  if (sgoModels.length) {
+    const cheapest = sgoModels.reduce((a, b) => a.cost < b.cost ? a : b);
+    document.getElementById('sumCheap').textContent =
+      cheapest.name.replace(/^Model \d+\w? — /, '') + ' · ' + fmtMoney(cheapest.cost);
+  }
+
+  // Results table
+  const max = Math.max(...models.map(m => m.cost), 1);
+  const rows = models.map(m => {
+    const pctDonations = totalDonations > 0 ? m.cost / totalDonations : 0;
+    const pctOverhead  = overhead > 0 ? m.cost / overhead : 0;
+    const widthPct = (m.cost / max) * 100;
+    let barClass = 'low';
+    if (pctOverhead > 0.15) barClass = 'high';
+    else if (pctOverhead > 0.08) barClass = 'med';
+    const payerPill = m.payer === 'donor'
+      ? '<span class="pill donor">Donor pays</span>'
+      : '<span class="pill sgo">SGO pays</span>';
+    return `
+      <tr>
+        <td data-label="Model"><div class="model-name">${m.name}</div></td>
+        <td data-label="Who Pays">${payerPill}</td>
+        <td data-label="Annual Cost" class="num">${fmtMoney(m.cost)}</td>
+        <td data-label="% of Donations" class="num">${fmtPct(pctDonations)}</td>
+        <td data-label="% of Overhead" class="num">${fmtPct(pctOverhead)}</td>
+        <td data-label="Relative" class="bar-cell">
+          <div class="bar-track"><div class="bar-fill ${barClass}" style="width:${widthPct}%"></div></div>
+        </td>
+      </tr>`;
+  }).join('');
+  document.getElementById('resultsBody').innerHTML = rows;
+}
+
+function renderScenarios() {
+  // Fixed assumptions for the scenario table
+  const baseInputs = {
+    schools: 20, admins: 5, donation: 1700,
+    m1Rate: 1.0, m2Flat: 144000, m4Rate: 2.0,
+    m5Base: 36000, m5Rate: 0.75, m6aRate: 6000
+  };
+  const buckets = [5000, 10000, 15000, 20000, 25000, 30000];
+
+  const allResults = buckets.map(d => {
+    return computeAll({ ...baseInputs, donors: d, applicants: d });
+  });
+
+  const groups = [
+    {
+      label: 'Foundation',
+      rows: [
+        { name: 'Total Donations',        get: r => fmtMoney(r.totalDonations) },
+        { name: 'Total Users',            get: r => fmtInt(r.totalUsers) },
+        { name: 'Overhead Cap (10%)',     get: r => fmtMoney(r.overhead) }
+      ]
+    },
+    {
+      label: 'Annual Cost by Model',
+      rows: [0,1,2,3,4,5,6].map(i => ({
+        name: allResults[0].models[i].name,
+        get: r => fmtMoney(r.models[i].cost)
+      }))
+    },
+    {
+      label: 'Cost as % of Donations',
+      rows: [0,1,2,3,4,5,6].map(i => ({
+        name: allResults[0].models[i].name,
+        get: r => r.totalDonations > 0 ? fmtPct(r.models[i].cost / r.totalDonations) : '—'
+      }))
+    }
+  ];
+
+  let html = '';
+  groups.forEach(g => {
+    html += `<tr class="group-header"><td colspan="7">${g.label}</td></tr>`;
+    g.rows.forEach(row => {
+      html += `<tr><td>${row.name}</td>`;
+      allResults.forEach(r => { html += `<td>${row.get(r)}</td>`; });
+      html += `</tr>`;
+    });
+  });
+  document.getElementById('scenarioBody').innerHTML = html;
+}
+
+// Pros/cons content
+const PROS_CONS = [
+  {
+    name: 'Model 1 — Donor 1% Fee',
+    tagline: 'Donor pays a transaction fee at checkout.',
+    pros: [
+      'Zero direct cost to the SGO.',
+      'Familiar industry model; easy to launch.',
+      'Vendor revenue scales linearly with adoption.'
+    ],
+    cons: [
+      'Donor loses tax credit on the fee portion (non-creditable).',
+      'Optically worse than "donate $1,700, credit $1,700".',
+      'Cost grows linearly forever — no scale benefit for donors.'
+    ]
+  },
+  {
+    name: 'Model 2 — Flat Subscription',
+    tagline: 'One annual price, regardless of volume.',
+    pros: [
+      'Donors keep 100% of the federal credit.',
+      'Simplest budgeting; one line item.',
+      'Becomes proportionally cheaper as donations grow.'
+    ],
+    cons: [
+      'Painful at low donor volume in year one.',
+      'No automatic upside for vendor when SGO scales.',
+      'Requires SGO confidence in software value upfront.'
+    ]
+  },
+  {
+    name: 'Model 3 — Tiered by Users',
+    tagline: 'Price steps up at user-count thresholds.',
+    pros: [
+      'Aligns with industry SaaS norms.',
+      'Predictable within each tier.',
+      'Encourages SGO growth (price doesn\'t grow per-user).'
+    ],
+    cons: [
+      'Step-function jumps create budget cliffs.',
+      'Counting "users" gets contested (active vs. seats).',
+      'Less elegant pitch than pure flat or per-school.'
+    ]
+  },
+  {
+    name: 'Model 4 — % of Donations',
+    tagline: 'Vendor takes a flat percentage of donated dollars.',
+    pros: [
+      'Pure pay-for-performance for the SGO.',
+      'Vendor and SGO incentives perfectly aligned on growth.',
+      'Costs scale down naturally if a year underperforms.'
+    ],
+    cons: [
+      'At 2% it eats 20% of the SGO\'s overhead allowance — huge 90% rule pressure.',
+      'Donor optics: "20¢ of every dollar" is hard to defend.',
+      'Vendor revenue can grow faster than vendor cost-to-serve.'
+    ]
+  },
+  {
+    name: 'Model 5 — Hybrid Base + %',
+    tagline: 'Smaller flat fee plus a smaller percentage.',
+    pros: [
+      'Caps SGO risk in year one with a modest base.',
+      'Vendor still gets upside as donations grow.',
+      'Lower donations percentage than pure Model 4.'
+    ],
+    cons: [
+      'Two numbers to negotiate instead of one.',
+      'Still scales with volume — doesn\'t shrink as % over time.',
+      'Modeling the breakeven vs. flat takes work.'
+    ]
+  },
+  {
+    name: 'Model 6a — Per-School Flat',
+    tagline: 'A flat dollar amount per participating school.',
+    pros: [
+      'Schools see exactly what they\'re paying for.',
+      'Naturally caps cost — schools grow slowly.',
+      'Easy to explain to school heads and boards.'
+    ],
+    cons: [
+      'Flat per-school is unfair to small/single-program schools.',
+      'Doesn\'t reflect actual data/usage volume.',
+      'Vendor revenue capped on school growth, not donor growth.'
+    ]
+  },
+  {
+    name: 'Model 6b — Per-School Tiered',
+    tagline: 'Per-school price varies with school size.',
+    pros: [
+      'Fairest per-school option — small schools pay less.',
+      'Cheapest model in long run; flat against donor growth.',
+      'Natural fit for K-12 segments with size variation.'
+    ],
+    cons: [
+      'Requires defining and verifying school size buckets.',
+      'No vendor upside as donor volume scales.',
+      'Pricing card has more line items to explain.'
+    ]
+  }
+];
+
+function renderProsCons() {
+  const html = PROS_CONS.map(m => `
+    <div class="model-card">
+      <h3>${m.name}</h3>
+      <div class="tagline">${m.tagline}</div>
+      <div class="pros-cons">
+        <div class="pc-block pc-pros">
+          <div class="pc-label">Pros</div>
+          <ul>${m.pros.map(p => `<li>${p}</li>`).join('')}</ul>
+        </div>
+        <div class="pc-block pc-cons">
+          <div class="pc-label">Cons</div>
+          <ul>${m.cons.map(c => `<li>${c}</li>`).join('')}</ul>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('prosConsGrid').innerHTML = html;
+}
+
+// Wire up events
+function bindInputs() {
+  const ids = ['donors','applicants','schools','admins','donation',
+               'm1Rate','m2Flat','m4Rate','m5Base','m5Rate','m6aRate'];
+  ids.forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      // Sync presets
+      if (id === 'donors') {
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+          btn.classList.toggle('active', +btn.dataset.d === +document.getElementById('donors').value);
+        });
+      }
+      renderResults();
+    });
+  });
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const d = +btn.dataset.d;
+      document.getElementById('donors').value = d;
+      document.getElementById('applicants').value = d;
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', b === btn));
+      renderResults();
+    });
+  });
+}
+
+bindInputs();
+renderResults();
+renderScenarios();
+renderProsCons();
+</script>
+</body>
+</html>
